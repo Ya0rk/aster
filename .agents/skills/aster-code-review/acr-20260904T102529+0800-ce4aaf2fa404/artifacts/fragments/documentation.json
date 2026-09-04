@@ -1,0 +1,22 @@
+[
+  {
+    "diff": "@@ -35,6 +35,12 @@ pub fn sys_msync(addr: Vaddr, len: usize, flag: i32, ctx: &Context) -> Result<Sy\n+    if !query_guard.is_fully_mapped() {\n+        return_errno_with_message!(\n+            Errno::ENOMEM,\n+            \"the range contains pages that are not mapped\"\n+        );\n+    }",
+    "file": "kernel/src/syscall/msync.rs",
+    "fix": "Update `book/src/kernel/linux-compatibility/syscall-flag-coverage/memory-management/README.md` under `### msync` and `book/src/kernel/linux-compatibility/syscall-flag-coverage/memory-management/msync.scml` to document the newly supported `msync` behavior for unmapped pages, including that a range containing unmapped pages returns `ENOMEM`.",
+    "grounding": "linux-compat-docs",
+    "line": 38,
+    "persona": "documentation",
+    "problem": "This change enhances the user-visible `msync` syscall behavior by recognizing ranges that contain unmapped pages and returning `ENOMEM`, but the Linux Compatibility docs and `msync.scml` are unchanged. The documented syscall coverage can therefore understate or misrepresent the implemented `msync` behavior.",
+    "severity": "major"
+  },
+  {
+    "diff": "@@ -9,6 +9,11 @@ impl Vmar {\n-    /// Also, the range must be completely mapped.\n+    ///\n+    /// If the range contains unmapped pages, an [`ENOMEM`] error will be returned.\n+    /// Note that pages before the unmapped hole are still protected.",
+    "file": "kernel/src/vm/vmar/vmar_impls/protect.rs",
+    "fix": "Update `book/src/kernel/linux-compatibility/syscall-flag-coverage/memory-management/README.md` under `### mprotect` and `book/src/kernel/linux-compatibility/syscall-flag-coverage/memory-management/mprotect.scml` to document the `mprotect` behavior for ranges with holes: returning `ENOMEM` when unmapped pages are encountered and preserving the partial permission changes before the hole.",
+    "grounding": "linux-compat-docs",
+    "line": 13,
+    "persona": "documentation",
+    "problem": "This change alters the user-visible `mprotect` syscall behavior for ranges containing unmapped pages, including the observable partial effect before the first hole. The matching Linux Compatibility docs and `mprotect.scml` were not updated, so the compatibility artifact no longer reflects the syscall behavior exposed to users.",
+    "severity": "major"
+  }
+]

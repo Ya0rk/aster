@@ -1,0 +1,62 @@
+{
+  "activated_personas": [
+    "maintainability",
+    "development",
+    "security",
+    "documentation"
+  ],
+  "agent_retries": 1,
+  "backend": "openai-agents",
+  "base": "eee6708ae",
+  "branch": "HEAD",
+  "canonical_input_sha256": "ce01a19085976114b6614337eb3bf9da7dbe1689719101b9b6131d88857a8b4b",
+  "catalog_digests": {
+    "development": "e0cb7029e1054774f5416d52e96710a7053989ca59b544bf11226f4adde10ded",
+    "documentation": "1e060caaaa9883750d729f37522f3d44f6988be158325dd41ca786a4e6e99bc9",
+    "maintainability": "c59bfeaaa6977fbaf86b6aab6ac260affa51980b9c13dc8266f95551e239121b",
+    "security": "3c8cabc803d975f8fa8dd5ed549550c3544c27cf7b1c0b0a41c3d666f55b5468"
+  },
+  "contract_version": "cf0fbd744b9d5f7ac32e1a3a93526a6e2531a51e300cd94fb258452ca7a1d509",
+  "created_at": "2026-09-04T10:25:29.488123+08:00",
+  "disclosure": "progressive",
+  "files": null,
+  "head": "7feb803ea",
+  "input_hashes": {
+    "development": "ce01a19085976114b6614337eb3bf9da7dbe1689719101b9b6131d88857a8b4b",
+    "documentation": "ce01a19085976114b6614337eb3bf9da7dbe1689719101b9b6131d88857a8b4b",
+    "maintainability": "ce01a19085976114b6614337eb3bf9da7dbe1689719101b9b6131d88857a8b4b",
+    "security": "ce01a19085976114b6614337eb3bf9da7dbe1689719101b9b6131d88857a8b4b"
+  },
+  "instruction_hashes": {
+    "development": "5f4300cfbcfe9360e5966425b3ec57908cc0b587e8b8069eaca621d5c9f6a2eb",
+    "documentation": "c70ab39020deede3b2602a22b068a19e567956e826119824283b7c8f96bf6644",
+    "maintainability": "19940a59334a4cee8402896e06390120588d328132936a0406b3da97d340a9e8",
+    "security": "0a64422183f4f252117289f9fe2f62d7c8c89035dd2cc20cf2b50f2e37cd7817"
+  },
+  "max_turns": null,
+  "mode": "diff",
+  "model": "openai/gpt-5.5",
+  "model_retries": 6,
+  "output": "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/0001-mprotect-merge-unwrap-20260904T102529+0800.review.md",
+  "overwrite": true,
+  "per_persona_context": "auto",
+  "postprocess_reasoning_effort": "medium",
+  "prompt_hashes": {
+    "development": "b3bb63976ea20d50a4707e6ca6d4e7ca8d8992cfff89c3ec9743a96d31449964",
+    "documentation": "ac596ed011f7c0ce49499515ebec36f9813da793147046757860385574d2160f",
+    "maintainability": "3716210664aeee6fa2614c270c9e244af632eaa57ae2a1f269ebbed127f5dc9e",
+    "security": "17a0fa6528ffac275af35fea134760ccf1ddc9488fb40ecce1003cef68a28160"
+  },
+  "provider_adapter": "any-llm",
+  "raw_args_sha256": "62245d3619889cb0bc9926ea1a23594aa5c91c7444af4267a47109a1ef4d3bf7",
+  "reasoning_effort": "high",
+  "review_model": "openai/gpt-5.5",
+  "run_id": "acr-20260904T102529+0800-ce4aaf2fa404",
+  "schema_version": 1,
+  "timeout_seconds": null,
+  "tools_enabled": true,
+  "trace_include_sensitive_data": true,
+  "trace_max_content_bytes": 65536,
+  "tracing_enabled": true,
+  "wire_api": "responses"
+}

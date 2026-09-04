@@ -1,0 +1,292 @@
+
+===== commit 7feb803ea =====
+
+[commit message]
+Fix cases where some pages are not mapped
+
+[changes]
+
+
+diff --git a/kernel/src/syscall/msync.rs b/kernel/src/syscall/msync.rs
+index 34608b750..4ede24f51 100644
+--- a/kernel/src/syscall/msync.rs
++++ b/kernel/src/syscall/msync.rs
+@@ -5,29 +5,6 @@ use align_ext::AlignExt;
+ use super::SyscallReturn;
+ use crate::{prelude::*, thread::kernel_thread::ThreadOptions, vm::vmar::VMAR_CAP_ADDR};
+ 
+-bitflags! {
+-    /// Flags for `msync`.
+-    ///
+-    /// See <https://elixir.bootlin.com/linux/v6.15.1/source/include/uapi/asm-generic/mman-common.h#L42>.
+-    pub struct MsyncFlags: i32 {
+-        /// Performs `msync` asynchronously.
+-        const MS_ASYNC      = 0x01;
+-        /// Invalidates cache so that other processes mapping the same file
+-        /// will immediately see the changes after this `msync` call.
+-        ///
+-        /// Should be a no-op since we use the same page cache for all processes.
+-        const MS_INVALIDATE = 0x02;
+-        /// Performs `msync` synchronously.
+-        const MS_SYNC       = 0x04;
+-    }
+-}
+-
+-macro_rules! return_partially_mapped {
+-    () => {
+-        return_errno_with_message!(Errno::ENOMEM, "`msync` called on a partially mapped range")
+-    };
+-}
+-
+ pub fn sys_msync(addr: Vaddr, len: usize, flag: i32, ctx: &Context) -> Result<SyscallReturn> {
+     let flags = MsyncFlags::from_bits(flag)
+         .ok_or_else(|| Error::with_message(Errno::EINVAL, "invalid flags"))?;
+@@ -58,23 +35,11 @@ pub fn sys_msync(addr: Vaddr, len: usize, flag: i32, ctx: &Context) -> Result<Sy
+     let query_guard = vmar.query(addr_range.clone());
+ 
+     // Check if the range is fully mapped.
+-    let mut mappings_iter = query_guard.iter();
+-    let Some(first) = mappings_iter.next() else {
+-        return_errno_with_message!(Errno::ENOMEM, "`msync` called on a not mapped range");
+-    };
+-    if first.map_to_addr() > addr_range.start {
+-        return_partially_mapped!();
+-    }
+-    let mut last_end = first.map_end();
+-    for mapping in mappings_iter {
+-        let start = mapping.map_to_addr();
+-        if start != last_end {
+-            return_partially_mapped!();
+-        }
+-        last_end = mapping.map_end();
+-    }
+-    if last_end < addr_range.end {
+-        return_partially_mapped!();
++    if !query_guard.is_fully_mapped() {
++        return_errno_with_message!(
++            Errno::ENOMEM,
++            "the range contains pages that are not mapped"
++        );
+     }
+ 
+     // Do nothing if not file-backed, as <https://pubs.opengroup.org/onlinepubs/9699919799/> says.
+@@ -82,7 +47,6 @@ pub fn sys_msync(addr: Vaddr, len: usize, flag: i32, ctx: &Context) -> Result<Sy
+         .iter()
+         .filter_map(|m| m.inode().cloned())
+         .collect::<Vec<_>>();
+-
+     let task_fn = move || {
+         for inode in inodes {
+             // TODO: Sync a necessary range instead of syncing the whole inode.
+@@ -99,3 +63,20 @@ pub fn sys_msync(addr: Vaddr, len: usize, flag: i32, ctx: &Context) -> Result<Sy
+ 
+     Ok(SyscallReturn::Return(0))
+ }
++
++bitflags! {
++    /// Flags for `msync`.
++    ///
++    /// Reference: <https://elixir.bootlin.com/linux/v6.15.1/source/include/uapi/asm-generic/mman-common.h#L42>.
++    struct MsyncFlags: i32 {
++        /// Performs `msync` asynchronously.
++        const MS_ASYNC      = 0x01;
++        /// Invalidates cache so that other processes mapping the same file
++        /// will immediately see the changes after this `msync` call.
++        ///
++        /// Should be a no-op since we use the same page cache for all processes.
++        const MS_INVALIDATE = 0x02;
++        /// Performs `msync` synchronously.
++        const MS_SYNC       = 0x04;
++    }
++}
+diff --git a/kernel/src/vm/vmar/vmar_impls/protect.rs b/kernel/src/vm/vmar/vmar_impls/protect.rs
+index d14d03f92..231241544 100644
+--- a/kernel/src/vm/vmar/vmar_impls/protect.rs
++++ b/kernel/src/vm/vmar/vmar_impls/protect.rs
+@@ -9,10 +9,14 @@ impl Vmar {
+     /// Change the permissions of the memory mappings in the specified range.
+     ///
+     /// The range's start and end addresses must be page-aligned.
+-    /// Also, the range must be completely mapped.
++    ///
++    /// If the range contains unmapped pages, an [`ENOMEM`] error will be returned.
++    /// Note that pages before the unmapped hole are still protected.
++    ///
++    /// [`ENOMEM`]: Errno::ENOMEM
+     pub fn protect(&self, perms: VmPerms, range: Range<usize>) -> Result<()> {
+-        assert!(range.start.is_multiple_of(PAGE_SIZE));
+-        assert!(range.end.is_multiple_of(PAGE_SIZE));
++        debug_assert!(range.start.is_multiple_of(PAGE_SIZE));
++        debug_assert!(range.end.is_multiple_of(PAGE_SIZE));
+ 
+         let mut inner = self.inner.write();
+         let vm_space = self.vm_space();
+@@ -20,17 +24,26 @@ impl Vmar {
+         let mut protect_mappings = Vec::new();
+ 
+         for vm_mapping in inner.vm_mappings.find(&range) {
+-            protect_mappings.push((vm_mapping.map_to_addr(), vm_mapping.perms()));
++            protect_mappings.push((vm_mapping.range(), vm_mapping.perms()))
+         }
+ 
+-        for (vm_mapping_addr, vm_mapping_perms) in protect_mappings {
++        let mut last_mapping_end = range.start;
++        for (vm_mapping_range, vm_mapping_perms) in protect_mappings {
++            if last_mapping_end < vm_mapping_range.start {
++                return_errno_with_message!(
++                    Errno::ENOMEM,
++                    "the range contains pages that are not mapped"
++                );
++            }
++            last_mapping_end = vm_mapping_range.end;
++
+             if perms == vm_mapping_perms & VmPerms::ALL_PERMS {
+                 continue;
+             }
+             let new_perms = perms | (vm_mapping_perms & VmPerms::ALL_MAY_PERMS);
+             new_perms.check()?;
+ 
+-            let vm_mapping = inner.remove(&vm_mapping_addr).unwrap();
++            let vm_mapping = inner.remove(&vm_mapping_range.start).unwrap();
+             let vm_mapping_range = vm_mapping.range();
+             let intersected_range = get_intersected_range(&range, &vm_mapping_range);
+ 
+@@ -50,6 +63,13 @@ impl Vmar {
+             inner.insert_try_merge(taken);
+         }
+ 
++        if last_mapping_end < range.end {
++            return_errno_with_message!(
++                Errno::ENOMEM,
++                "the range contains pages that are not mapped"
++            );
++        }
++
+         Ok(())
+     }
+ }
+diff --git a/kernel/src/vm/vmar/vmar_impls/query.rs b/kernel/src/vm/vmar/vmar_impls/query.rs
+index 15933b2cb..2a1c0b561 100644
+--- a/kernel/src/vm/vmar/vmar_impls/query.rs
++++ b/kernel/src/vm/vmar/vmar_impls/query.rs
+@@ -28,4 +28,25 @@ impl VmarQueryGuard<'_> {
+     pub fn iter(&self) -> impl Iterator<Item = &VmMapping> {
+         self.vmar.query(&self.range)
+     }
++
++    /// Returns whether the range is fully mapped.
++    ///
++    /// In other words, this method will return `false` if and only if the
++    /// range contains pages that are not mapped.
++    pub fn is_fully_mapped(&self) -> bool {
++        let mut last_mapping_end = self.range.start;
++
++        for mapping in self.iter() {
++            if last_mapping_end < mapping.map_to_addr() {
++                return false;
++            }
++            last_mapping_end = mapping.map_end();
++        }
++
++        if last_mapping_end < self.range.end {
++            return false;
++        }
++
++        true
++    }
+ }
+diff --git a/kernel/src/vm/vmar/vmar_impls/unmap.rs b/kernel/src/vm/vmar/vmar_impls/unmap.rs
+index 521e6342c..9742306fb 100644
+--- a/kernel/src/vm/vmar/vmar_impls/unmap.rs
++++ b/kernel/src/vm/vmar/vmar_impls/unmap.rs
+@@ -35,6 +35,9 @@ impl Vmar {
+     /// Mappings may fall partially within the range; only the overlapped
+     /// portions of the mappings are unmapped.
+     pub fn remove_mapping(&self, range: Range<usize>) -> Result<()> {
++        debug_assert!(range.start.is_multiple_of(PAGE_SIZE));
++        debug_assert!(range.end.is_multiple_of(PAGE_SIZE));
++
+         let mut inner = self.inner.write();
+         let mut rss_delta = RssDelta::new(self);
+         inner.alloc_free_region_exact_truncate(
+diff --git a/test/src/apps/mmap/mmap_err.c b/test/src/apps/mmap/mmap_err.c
+index e632d9863..09e9aebee 100644
+--- a/test/src/apps/mmap/mmap_err.c
++++ b/test/src/apps/mmap/mmap_err.c
+@@ -91,6 +91,7 @@ FN_TEST(underflow_addr)
+ 	TEST_ERRNO(mremap(valid_addr, PAGE_SIZE, PAGE_SIZE, MREMAP_FIXED, addr),
+ 		   EINVAL);
+ 	TEST_SUCC(munmap(addr, PAGE_SIZE));
++	TEST_ERRNO(mprotect(addr, PAGE_SIZE, PROT_READ), ENOMEM);
+ 	TEST_ERRNO(msync(addr, PAGE_SIZE, 0), ENOMEM);
+ }
+ END_TEST()
+diff --git a/test/src/apps/mmap/mmap_holes.c b/test/src/apps/mmap/mmap_holes.c
+new file mode 100644
+index 000000000..f1841cce7
+--- /dev/null
++++ b/test/src/apps/mmap/mmap_holes.c
+@@ -0,0 +1,51 @@
++// SPDX-License-Identifier: MPL-2.0
++
++#include <sys/mman.h>
++
++#include "../test.h"
++
++static char *start_addr;
++
++#define PAGE_SIZE 4096
++
++FN_SETUP(init)
++{
++	start_addr = CHECK_WITH(mmap(NULL, PAGE_SIZE * 4, PROT_READ,
++				     MAP_PRIVATE | MAP_ANONYMOUS, 0, 0),
++				_ret != MAP_FAILED);
++
++	CHECK(munmap(start_addr + PAGE_SIZE * 2, PAGE_SIZE));
++}
++END_SETUP()
++
++FN_TEST(mprotect)
++{
++	// `mprotect` takes effect only for pages before the hole.
++	TEST_ERRNO(mprotect(start_addr + PAGE_SIZE, PAGE_SIZE * 3,
++			    PROT_READ | PROT_WRITE),
++		   ENOMEM);
++	TEST_RES(start_addr[PAGE_SIZE] = 12, start_addr[PAGE_SIZE] == 12);
++
++	TEST_ERRNO(mprotect(start_addr + PAGE_SIZE * 2, PAGE_SIZE * 2,
++			    PROT_READ | PROT_WRITE),
++		   ENOMEM);
++	TEST_SUCC(mprotect(start_addr + PAGE_SIZE * 3, PAGE_SIZE,
++			   PROT_READ | PROT_WRITE));
++	TEST_RES(start_addr[PAGE_SIZE * 3] = 45,
++		 start_addr[PAGE_SIZE * 3] == 45);
++}
++END_TEST()
++
++FN_TEST(msync)
++{
++	TEST_ERRNO(msync(start_addr + PAGE_SIZE, PAGE_SIZE * 3, 0), ENOMEM);
++	TEST_ERRNO(msync(start_addr + PAGE_SIZE * 2, PAGE_SIZE * 2, 0), ENOMEM);
++	TEST_SUCC(msync(start_addr + PAGE_SIZE * 3, PAGE_SIZE, 0));
++}
++END_TEST()
++
++FN_SETUP(cleanup)
++{
++	CHECK(munmap(start_addr, PAGE_SIZE * 4));
++}
++END_SETUP()
+diff --git a/test/src/apps/scripts/process.sh b/test/src/apps/scripts/process.sh
+index 6479b8f61..eb19d7da9 100755
+--- a/test/src/apps/scripts/process.sh
++++ b/test/src/apps/scripts/process.sh
+@@ -38,6 +38,7 @@ mmap/mmap_and_mprotect
+ mmap/mmap_and_mremap
+ mmap/mmap_beyond_the_file
+ mmap/mmap_err
++mmap/mmap_holes
+ mmap/mmap_shared_filebacked
+ mmap/mmap_readahead
+ mmap/mmap_vmrss

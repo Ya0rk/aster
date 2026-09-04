@@ -1,0 +1,114 @@
+{
+  "activated_personas": [
+    "maintainability",
+    "development",
+    "security",
+    "documentation"
+  ],
+  "artifact_digests": {
+    "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/assembled.json": "c47b312ab373e8bc37111c45aa40d1fa31b3dfd51cb09fb375095df7380c14f3",
+    "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/canonical-input.txt": "ce01a19085976114b6614337eb3bf9da7dbe1689719101b9b6131d88857a8b4b",
+    "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/consolidated.json": "d3d8837cbefd8c46644a6e2bd0fe6b54143106c15e29516e5682f521ee3484ed",
+    "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/final-review.md": "ed11135ddb1847b9b330da527a5fe6b6ca2eea38af1f2d515161ecbf80b85188",
+    "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/summary.md": "96b0cc2088e0adaf8c8f391c769ca41dcd15a612d79f08a65528401f57f91d1d",
+    "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/verified.json": "2e26e20508c49b5bc776910885d3e6ae99f4da77f356ef4df8e92a16c8d86696"
+  },
+  "error_code": null,
+  "error_message": null,
+  "raw_args_sha256": "62245d3619889cb0bc9926ea1a23594aa5c91c7444af4267a47109a1ef4d3bf7",
+  "records": [
+    {
+      "artifact": "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/canonical-input.txt",
+      "artifact_sha256": "ce01a19085976114b6614337eb3bf9da7dbe1689719101b9b6131d88857a8b4b",
+      "error_code": null,
+      "finished_at": "2026-09-04T10:25:30.561498+08:00",
+      "stage": "RESOLVED",
+      "started_at": "2026-09-04T10:25:30.495336+08:00",
+      "status": "completed"
+    },
+    {
+      "artifact": null,
+      "artifact_sha256": null,
+      "error_code": null,
+      "finished_at": "2026-09-04T10:25:30.562478+08:00",
+      "stage": "ACTIVATED",
+      "started_at": "2026-09-04T10:25:30.561990+08:00",
+      "status": "completed"
+    },
+    {
+      "artifact": null,
+      "artifact_sha256": null,
+      "error_code": null,
+      "finished_at": "2026-09-04T10:25:30.753209+08:00",
+      "stage": "PROMPTS_BUILT",
+      "started_at": "2026-09-04T10:25:30.562537+08:00",
+      "status": "completed"
+    },
+    {
+      "artifact": null,
+      "artifact_sha256": null,
+      "error_code": null,
+      "finished_at": "2026-09-04T10:29:49.236107+08:00",
+      "stage": "PASSES_RUNNING",
+      "started_at": "2026-09-04T10:25:30.753603+08:00",
+      "status": "completed"
+    },
+    {
+      "artifact": null,
+      "artifact_sha256": null,
+      "error_code": null,
+      "finished_at": "2026-09-04T10:29:49.236926+08:00",
+      "stage": "PASSES_VALIDATED",
+      "started_at": "2026-09-04T10:29:49.236600+08:00",
+      "status": "completed"
+    },
+    {
+      "artifact": "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/assembled.json",
+      "artifact_sha256": "c47b312ab373e8bc37111c45aa40d1fa31b3dfd51cb09fb375095df7380c14f3",
+      "error_code": null,
+      "finished_at": "2026-09-04T10:29:49.237304+08:00",
+      "stage": "ASSEMBLED",
+      "started_at": "2026-09-04T10:29:49.237264+08:00",
+      "status": "completed"
+    },
+    {
+      "artifact": "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/verified.json",
+      "artifact_sha256": "2e26e20508c49b5bc776910885d3e6ae99f4da77f356ef4df8e92a16c8d86696",
+      "error_code": null,
+      "finished_at": "2026-09-04T10:31:34.692972+08:00",
+      "stage": "VERIFIED",
+      "started_at": "2026-09-04T10:29:49.237681+08:00",
+      "status": "completed"
+    },
+    {
+      "artifact": "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/consolidated.json",
+      "artifact_sha256": "d3d8837cbefd8c46644a6e2bd0fe6b54143106c15e29516e5682f521ee3484ed",
+      "error_code": null,
+      "finished_at": "2026-09-04T10:31:43.146486+08:00",
+      "stage": "CONSOLIDATED",
+      "started_at": "2026-09-04T10:31:34.693504+08:00",
+      "status": "completed"
+    },
+    {
+      "artifact": "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/summary.md",
+      "artifact_sha256": "96b0cc2088e0adaf8c8f391c769ca41dcd15a612d79f08a65528401f57f91d1d",
+      "error_code": null,
+      "finished_at": "2026-09-04T10:31:52.474966+08:00",
+      "stage": "SUMMARIZED",
+      "started_at": "2026-09-04T10:31:43.146992+08:00",
+      "status": "completed"
+    },
+    {
+      "artifact": "/tmp/aster-code-review/benchmarks/run-20260904T102529-0001-f90afw21/logs/acr-20260904T102529+0800-ce4aaf2fa404/artifacts/final-review.md",
+      "artifact_sha256": "ed11135ddb1847b9b330da527a5fe6b6ca2eea38af1f2d515161ecbf80b85188",
+      "error_code": null,
+      "finished_at": "2026-09-04T10:31:52.475756+08:00",
+      "stage": "PUBLISHED",
+      "started_at": "2026-09-04T10:31:52.475537+08:00",
+      "status": "completed"
+    }
+  ],
+  "run_id": "acr-20260904T102529+0800-ce4aaf2fa404",
+  "schema_version": 1,
+  "stage": "PUBLISHED"
+}
